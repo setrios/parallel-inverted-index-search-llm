@@ -9,9 +9,10 @@ from pathlib import Path
 from wordfreq import top_n_list
 
 WORDS_PER_SENTENCE = 12
+ROOT = Path(__file__).resolve().parent.parent  # repository root
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('--out', default='data', help='output directory (default: data)')
+parser.add_argument('--out', type=Path, default=ROOT / 'data', help='output directory (default: <repo>/data)')
 parser.add_argument('--docs', type=int, default=20000, help='number of documents (default: 20000)')
 parser.add_argument('--sentences', type=int, default=1550, help='sentences per document (default: 1550, about 100 KB)')
 parser.add_argument('--seed', type=int, default=80085, help='random seed (default: 80085)')
