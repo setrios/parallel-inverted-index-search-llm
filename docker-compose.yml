@@ -17,4 +17,4 @@ services:
 
 volumes:
   ollama:
-    external: true
+    name: ollama
