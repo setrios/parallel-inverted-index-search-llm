@@ -10,7 +10,7 @@ public class Tokenizer {
             return List.of();
         }
 
-        String[] parts = text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"); // all except unicode lettes and numbers
+        String[] parts = text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"); // split on all non unicode letters and numbers
         List<String> tokens = new ArrayList<>(parts.length);
 
         for (String part : parts) {
