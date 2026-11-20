@@ -28,7 +28,7 @@ public class SearchServiceTest {
     private SearchService searchOverFiles() throws IOException, InterruptedException {
         IndexingService indexing = new IndexingService(dir);
         indexing.buildIndex(2);
-        return new SearchService(indexing);
+        return new SearchService(indexing, null);
     }
 
     private List<SearchResult> search(SearchService service, String query, String... expanded) throws IOException {
@@ -37,7 +37,7 @@ public class SearchServiceTest {
 
     @Test
     public void noResultsBeforeIndexIsBuilt() throws IOException {
-        SearchService service = new SearchService(new IndexingService(dir));
+        SearchService service = new SearchService(new IndexingService(dir), null);
 
         assertEquals(0, search(service, "cat").size());
     }

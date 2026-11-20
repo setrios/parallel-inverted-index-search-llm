@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.llmsearch.server.index.IndexingService;
 import com.llmsearch.server.ollama.OllamaClient;
+import com.llmsearch.server.ollama.QueryExpander;
 import com.llmsearch.server.search.SearchService;
 
 @Configuration
@@ -18,12 +19,17 @@ public class AppConfig {
     }
 
     @Bean
-    public SearchService searchService(IndexingService indexingService) {
-        return new SearchService(indexingService);
+    public SearchService searchService(IndexingService indexingService, QueryExpander queryExpander) {
+        return new SearchService(indexingService, queryExpander);
     }
 
     @Bean
     public OllamaClient ollamaClient(@Value("${ollama.url}") String url, @Value("${ollama.model}") String model) {
         return new OllamaClient(url, model);
+    }
+
+    @Bean
+    public QueryExpander queryExpander(OllamaClient ollamaClient) {
+        return new QueryExpander(ollamaClient);
     }
 }

@@ -5,6 +5,7 @@ import com.llmsearch.server.index.IndexSnapshot;
 import com.llmsearch.server.index.IndexingService;
 import com.llmsearch.server.index.InvertedIndex;
 import com.llmsearch.server.index.Tokenizer;
+import com.llmsearch.server.ollama.QueryExpander;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,17 +24,18 @@ public class SearchService {
     private static final int MAX_RESULTS = 10;
 
     private final IndexingService indexing;
+    private final QueryExpander expander;
     private final Tokenizer tokenizer = new Tokenizer();
     private final Ranker ranker = new Ranker();
     private final SnippetBuilder snippetBuilder = new SnippetBuilder();
 
-    public SearchService(IndexingService indexing) {
+    public SearchService(IndexingService indexing, QueryExpander expander) {
         this.indexing = indexing;
+        this.expander = expander;
     }
 
     public ExpandedQuery expandQuery(String query) {
-        // here ollama will expand
-        return new ExpandedQuery(query, List.of());
+        return expander.expand(query);
     }
 
     public SearchResponse search(String query) throws IOException {
