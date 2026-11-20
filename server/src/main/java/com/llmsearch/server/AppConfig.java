@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.llmsearch.server.index.IndexingService;
+import com.llmsearch.server.ollama.OllamaClient;
 import com.llmsearch.server.search.SearchService;
 
 @Configuration
@@ -19,5 +20,10 @@ public class AppConfig {
     @Bean
     public SearchService searchService(IndexingService indexingService) {
         return new SearchService(indexingService);
+    }
+
+    @Bean
+    public OllamaClient ollamaClient(@Value("${ollama.url}") String url, @Value("${ollama.model}") String model) {
+        return new OllamaClient(url, model);
     }
 }
