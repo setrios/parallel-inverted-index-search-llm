@@ -31,6 +31,19 @@ public class SearchService {
         this.indexing = indexing;
     }
 
+    public ExpandedQuery expandQuery(String query) {
+        // here ollama will expand
+        return new ExpandedQuery(query, List.of());
+    }
+
+    public SearchResponse search(String query) throws IOException {
+        long start = System.nanoTime();
+        ExpandedQuery q = expandQuery(query);
+        List<SearchResult> results = keywordSearch(q);
+        long ms = (System.nanoTime() - start) / 1000000;
+        return new SearchResponse(results, ms);
+    }
+
     private void addScores(
         InvertedIndex index,
         Set<String> terms,

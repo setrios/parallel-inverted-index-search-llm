@@ -26,10 +26,9 @@ public class IndexController {
         this.indexing = indexing;
     }
 
-    @PostMapping ("/api/index")
+    @PostMapping("/api/index")
     public IndexResponse index(@RequestBody IndexRequest request) throws IOException, InterruptedException {
         IndexStats s = indexing.buildIndex(request.threads());
         return new IndexResponse("ok", s.documents(), s.buildTimeMs());
     }
-
 }
