@@ -111,4 +111,25 @@ public class ThreadPoolTest {
         }
         pool.shutdown();
     }
+
+    @Test
+    @Timeout(10)
+    void countsFailedTasks() throws InterruptedException {
+        ThreadPool pool = new ThreadPool(4);
+
+        for (int i = 0; i < 10; i++) {
+            final int n = i;
+            pool.submit(new Runnable() {
+                public void run() {
+                    if (n % 3 == 0) { // tasks 0, 3, 6, 9 fail
+                        throw new RuntimeException("task " + n + " failed on purpose");
+                    }
+                }
+            });
+        }
+        pool.awaitCompletion();
+
+        assertEquals(4, pool.failedTasks());
+        pool.shutdown();
+    }
 }

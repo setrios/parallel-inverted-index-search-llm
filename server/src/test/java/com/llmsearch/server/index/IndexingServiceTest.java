@@ -108,7 +108,7 @@ public class IndexingServiceTest {
     }
 
     @Test
-    @Timeout(11)
+    @Timeout(10)
     public void secondBuildReplacesTheIndex() throws IOException, InterruptedException {
         write("a.txt", "cat");
         IndexingService service = new IndexingService(dir);
@@ -130,6 +130,20 @@ public class IndexingServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.buildIndex(0));
         assertThrows(IllegalArgumentException.class, () -> service.buildIndex(-3));
+    }
+
+    @Test
+    @Timeout(10)
+    public void unreadableDocumentFailsTheBuild() throws IOException, InterruptedException {
+        write("a.txt", "cat");
+        IndexingService service = new IndexingService(dir);
+        service.buildIndex(2);
+
+        // a folder named like a document: it is listed, but reading it as a file fails
+        Files.createDirectory(dir.resolve("broken.txt"));
+
+        assertThrows(IllegalStateException.class, () -> service.buildIndex(2));
+        assertEquals(1, service.getStats().documents()); // the previous index is kept
     }
 
     @Test
