@@ -1,0 +1,171 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search</title>
+</head>
+
+<body>
+  <h1>Search</h1>
+
+  <form id="form">
+    <input id="query" type="text" placeholder="search text" />
+    <button type="submit">Search</button>
+  </form>
+
+  <h3>Pipeline</h3>
+  <ul>
+    <li class="stage" id="query_expansion">query_expansion</li>
+    <li class="stage" id="keyword_search">keyword_search</li>
+    <li class="stage" id="done">done</li>
+  </ul>
+  <p id="terms"></p>
+
+  <h3>Results</h3>
+  <div id="results"></div>
+
+  <script>
+    document.getElementById("form").onsubmit = function (event) {
+      event.preventDefault();
+      const query = document.getElementById("query").value;
+
+      // reset the page before a new search
+      for (const id of [
+        "query_expansion",
+        "keyword_search",
+        "done",
+      ]) {
+        const li = document.getElementById(id);
+        li.className = "stage";
+        li.textContent = id;
+      }
+      document.getElementById("terms").textContent = "";
+      document.getElementById("results").innerHTML = "";
+
+      // connection
+      const start = Date.now();
+      let finished = false;
+      setStage("query_expansion", "active", "running...");
+      const ws = new WebSocket(
+        "ws://" + location.host + "/ws/search",
+      );
+      ws.onopen = function () {
+        ws.send(JSON.stringify({ query: query }));
+      };
+
+      ws.onmessage = function (event) {
+        const msg = JSON.parse(event.data);
+        const ms = Date.now() - start;
+
+        if (msg.stage === "query_expansion") {
+          setStage("query_expansion", "done", ms + " ms");
+          setStage("keyword_search", "active", "running...");
+          document.getElementById("terms").textContent =
+            "Expanded terms: " +
+            (msg.data.expanded_terms.join(", ") || "none");
+        } else if (msg.stage === "keyword_search") {
+          setStage("keyword_search", "done", ms + " ms");
+          showResults(msg.data.results);
+        } else if (msg.stage === "error") {
+          markFailed();
+          document.getElementById("results").textContent =
+            "Error: " + msg.data.message;
+        } else if (msg.stage === "done") {
+          finished = true;
+          setStage("done", "done", ms + " ms");
+          ws.close();
+        }
+      };
+
+      // called when the server is down or the connection breaks
+      ws.onclose = function () {
+        if (!finished) {
+          markFailed();
+          document.getElementById("results").textContent =
+            "Connection error: is the server running?";
+        }
+      };
+    };
+
+    function setStage(id, state, text) {
+      const li = document.getElementById(id);
+      li.className = "stage " + state;
+      li.textContent = id + " - " + text;
+    }
+
+    // the stage that was running when something went wrong turns red
+    function markFailed() {
+      for (const id of [
+        "query_expansion",
+        "keyword_search",
+        "done",
+      ]) {
+        if (
+          document.getElementById(id).className === "stage active"
+        ) {
+          setStage(id, "failed", "failed");
+        }
+      }
+    }
+
+    function showResults(results) {
+      const div = document.getElementById("results");
+      if (results.length === 0) {
+        div.textContent = "Nothing found";
+        return;
+      }
+      for (const r of results) {
+        const item = document.createElement("div");
+        item.className = "result";
+
+        const title = document.createElement("b");
+        title.textContent =
+          r.doc_id + " (score " + r.score.toFixed(3) + ")";
+        const snippet = document.createElement("p");
+        snippet.textContent = r.snippet; // textContent, text from files is never run as HTML
+
+        item.appendChild(title);
+        item.appendChild(snippet);
+        div.appendChild(item);
+      }
+    }
+  </script>
+  
+  <style>
+    *,
+    ::before,
+    ::after {
+	  box-sizing: border-box;
+    }
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 10px;
+    }
+    #query {
+      width: 70%;
+      padding: 5px;
+    }
+    .stage {
+      color: gray;
+    }
+    .stage.active {
+      color: orange;
+    }
+    .stage.done {
+      color: green;
+    }
+    .stage.failed {
+      color: red;
+    }
+    .result {
+      border-bottom: 1px solid #ccc;
+      padding: 8px 0;
+    }
+  </style>
+</body>
+
+</html>
