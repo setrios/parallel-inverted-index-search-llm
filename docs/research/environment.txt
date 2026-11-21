@@ -1,0 +1,10 @@
+Test machine
+
+CPU: Intel Core i5-10600KF, 6 cores / 12 threads, 4.8 GHz, L3 12 MB
+RAM: 16 GB, 3200Mhz
+OS: Arch linux, kernel 7.3.5-arch1-1
+Docker: 29.10.0
+Java: Temurin 25.0.5.1 (in the server container), heap -Xmx6g
+Ollama: llama3.2:3b on CPU
+
+Server and Ollama ran in Docker containers.
