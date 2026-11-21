@@ -49,7 +49,19 @@ def print_results(answer):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Search client for the parallel inverted index server.")
+    parser = argparse.ArgumentParser(
+        description="Search client for the parallel inverted index server.",
+        epilog="""examples:
+  ./search "climate change"     search for documents
+  ./search --index 8            build the index with 8 threads
+  ./search --stats              show how many documents are indexed
+  ./search --health             check that the server and Ollama are up
+  ./search --server http://other-host:8080 "car"
+
+environment:
+  SEARCH_SERVER                 server address, used when --server is not given""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("query", nargs="?", help="text to search for")
     parser.add_argument("--index", type=int, metavar="THREADS", help="build the index with THREADS threads")
     parser.add_argument("--stats", action="store_true", help="show index statistics")
