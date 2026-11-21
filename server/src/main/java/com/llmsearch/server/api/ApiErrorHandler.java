@@ -31,4 +31,9 @@ public class ApiErrorHandler {
     public ResponseEntity<ErrorResponse> ioError(IOException e) {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> serverError(IllegalStateException e) {
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
+    }
 }

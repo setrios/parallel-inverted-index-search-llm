@@ -96,6 +96,9 @@ public class IndexingService {
                     });
                 }
                 pool.awaitCompletion();
+                if (pool.failedTasks() > 0) {
+                    throw new IllegalStateException(pool.failedTasks() + " documents failed to index, see the server log");
+                }
             } finally {
                 pool.shutdown();
             }

@@ -11,8 +11,9 @@ public class ThreadPool {
     private final ArrayDeque<Runnable> queue = new ArrayDeque<>();
     private final Thread[] workers;
     private int unfinished = 0;
+    private int failedTasks = 0;
     private boolean shutdown = false;
-    
+
     public ThreadPool(int threads) {
         if (threads < 1) {
             throw new IllegalArgumentException("Less than 1 thread set!");
@@ -27,7 +28,7 @@ public class ThreadPool {
             workers[i].start();
         }
     }
-    
+
     private void workerLoop() {
         while (true) {
             Runnable task;
@@ -50,13 +51,19 @@ public class ThreadPool {
             }
 
             // run task
+            boolean failed = false;
             try {
                 task.run();
             } catch (Throwable t) {
+                failed = true;
                 System.err.println(Thread.currentThread().getName() + ": task failed " + t);
             } finally {
                 lock.lock();
                 try {
+                    // counted before unfinished reaches 0, so awaitCompletion() callers see every failure
+                    if (failed) {
+                        failedTasks++;
+                    }
                     unfinished--;
                     if (unfinished == 0) {
                         allDone.signalAll();
@@ -92,6 +99,15 @@ public class ThreadPool {
             while (unfinished > 0) {
                 allDone.await();
             }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public int failedTasks() {
+        lock.lock();
+        try {
+            return failedTasks;
         } finally {
             lock.unlock();
         }
