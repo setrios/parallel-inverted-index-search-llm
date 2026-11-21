@@ -5,6 +5,24 @@ services:
       - "11434:11434"
     volumes:
       - ollama:/root/.ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h # keep the model loaded
+    healthcheck: # check if ollama responds before work
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # downloads the model on first start, then exits
+  ollama-pull:
+    image: ollama/ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    # downloads the model once, later finds it in the volume and skips the download
+    entrypoint: ["/bin/sh", "-c", "ollama show llama3.2:3b > /dev/null 2>&1 || ollama pull llama3.2:3b"]
+    depends_on:
+      ollama:
+        condition: service_healthy
 
   server:
     build: ./server
@@ -12,8 +30,13 @@ services:
       - "8080:8080"
     environment:
       OLLAMA_URL: http://ollama:11434
+      DATA_DIR: /data
+      JAVA_TOOL_OPTIONS: -Xmx6g # the index takes about 2 GB, rebuild needs room for two
+    volumes:
+      - ./data:/data:ro
     depends_on:
-      - ollama
+      ollama-pull:
+        condition: service_completed_successfully
 
 volumes:
   ollama:
