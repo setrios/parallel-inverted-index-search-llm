@@ -47,6 +47,7 @@
       // connection
       const start = Date.now();
       let finished = false;
+      let terms = new Set(); // words to make bold in the snippets
       setStage("query_expansion", "active", "running...");
       const ws = new WebSocket(
         "ws://" + location.host + "/ws/search",
@@ -62,12 +63,18 @@
         if (msg.stage === "query_expansion") {
           setStage("query_expansion", "done", ms + " ms");
           setStage("keyword_search", "active", "running...");
+          terms = new Set(words(msg.data.original));
+          for (const t of msg.data.expanded_terms) {
+            for (const w of words(t)) {
+              terms.add(w); // "motor vehicle" -> motor, vehicle
+            }
+          }
           document.getElementById("terms").textContent =
             "Expanded terms: " +
             (msg.data.expanded_terms.join(", ") || "none");
         } else if (msg.stage === "keyword_search") {
           setStage("keyword_search", "done", ms + " ms");
-          showResults(msg.data.results);
+          showResults(msg.data.results, terms);
         } else if (msg.stage === "error") {
           markFailed();
           document.getElementById("results").textContent =
@@ -88,6 +95,11 @@
         }
       };
     };
+
+    // same rule as the server Tokenizer: lower case, anything except letters and digits splits words
+    function words(text) {
+      return text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w !== "");
+    }
 
     function setStage(id, state, text) {
       const li = document.getElementById(id);
@@ -110,7 +122,7 @@
       }
     }
 
-    function showResults(results) {
+    function showResults(results, terms) {
       const div = document.getElementById("results");
       if (results.length === 0) {
         div.textContent = "Nothing found";
@@ -124,7 +136,16 @@
         title.textContent =
           r.doc_id + " (score " + r.score.toFixed(3) + ")";
         const snippet = document.createElement("p");
-        snippet.textContent = r.snippet; // textContent, text from files is never run as HTML
+        // split keeps the words because of the brackets: "the car, a" -> ["the", " ", "car", ", ", "a"]
+        for (const part of r.snippet.split(/([\p{L}\p{N}]+)/u)) {
+          if (terms.has(part.toLowerCase())) {
+            const b = document.createElement("b");
+            b.textContent = part;
+            snippet.appendChild(b);
+          } else {
+            snippet.appendChild(document.createTextNode(part)); // text from files is never run as HTML
+          }
+        }
 
         item.appendChild(title);
         item.appendChild(snippet);
@@ -132,7 +153,7 @@
       }
     }
   </script>
-  
+
   <style>
     *,
     ::before,
