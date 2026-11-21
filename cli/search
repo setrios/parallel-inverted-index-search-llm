@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Command-line client for the search server.
+
+  ./search "query text"       search (keyword mode)
+  ./search --index 8          build the index with 8 threads
+  ./search --stats            show index statistics
+  ./search --health           check the server and Ollama
+
+The server address is taken from --server or the SEARCH_SERVER variable (default http://localhost:8080).
+"""
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+DEFAULT_SERVER = os.environ.get("SEARCH_SERVER", "http://localhost:8080")
+
+
+def call(server, method, path, body=None):
+    """Sends one request and returns the decoded JSON answer"""
+    if body is not None:
+        data = json.dumps(body).encode()
+    else:
+        data = None
+        
+    request = urllib.request.Request(server + path, data=data, method=method, headers={"Content-Type": "application/json"})
+    
+    try:
+        with urllib.request.urlopen(request, timeout=600) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as e:  # the server answered with 4xx/5xx
+        try:
+            message = json.load(e).get("error", e.reason)
+        except ValueError:
+            message = e.reason
+        sys.exit(f"error: {e.code} {message}")
+    except urllib.error.URLError as e:  # the server did not answer at all
+        sys.exit(f"error: cannot connect to {server} ({e.reason}); is the server running?")
+
+
+def print_results(answer):
+    results = answer["results"]
+    print(f"{len(results)} results in {answer['time_ms']} ms")
+    for i, r in enumerate(results, 1):
+        print(f"\n{i:2}. {r['doc_id']}  score {r['score']:.3f}")
+        print(f"    {r['snippet']}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Search client for the parallel inverted index server.")
+    parser.add_argument("query", nargs="?", help="text to search for")
+    parser.add_argument("--index", type=int, metavar="THREADS", help="build the index with THREADS threads")
+    parser.add_argument("--stats", action="store_true", help="show index statistics")
+    parser.add_argument("--health", action="store_true", help="check the server and Ollama")
+    parser.add_argument("--server", default=DEFAULT_SERVER, help=f"server address (default {DEFAULT_SERVER})")
+    args = parser.parse_args()
+    server = args.server.rstrip("/")
+
+    if args.index is not None:
+        answer = call(server, "POST", "/api/index", {"threads": args.index})
+        print(f"indexed {answer['documents_indexed']} documents in {answer['time_ms']} ms")
+    elif args.stats:
+        answer = call(server, "GET", "/api/stats")
+        print(f"documents:  {answer['documents']}")
+        print(f"build time: {answer['index_build_time_ms']} ms")
+        print(f"threads:    {answer['threads_used']}")
+    elif args.health:
+        answer = call(server, "GET", "/api/health")
+        print(f"server: {answer['status']}")
+        print(f"ollama: {'up' if answer['ollama'] else 'down'}")
+    elif args.query:
+        print_results(call(server, "POST", "/api/search", {"query": args.query, "mode": "keyword"}))
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
