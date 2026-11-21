@@ -56,6 +56,10 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- the index takes about 2 GB, rebuild keeps the old and the new index in memory at once -->
+                    <jvmArguments>-Xmx6g</jvmArguments>
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>
