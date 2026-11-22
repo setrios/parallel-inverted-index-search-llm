@@ -27,8 +27,15 @@
   <div id="results"></div>
 
   <script>
+    let ws = null;
     document.getElementById("form").onsubmit = function (event) {
       event.preventDefault();
+      // stop the old search, so its answers do not mix with the new one
+      if (ws) {
+        ws.onmessage = null;
+        ws.onclose = null; // closing it here is not an error, so the page must not show "failed"
+        ws.close();
+      }
       const query = document.getElementById("query").value;
 
       // reset the page before a new search
