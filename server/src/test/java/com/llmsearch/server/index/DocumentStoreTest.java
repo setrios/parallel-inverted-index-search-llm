@@ -1,5 +1,6 @@
 package com.llmsearch.server.index;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -53,6 +54,35 @@ public class DocumentStoreTest {
     @Test
     public void nullPathIsRejected() {
         assertThrows(NullPointerException.class, () -> store.register(null));
+    }
+
+    @Test
+    public void savesLengthsOfDocuments() {
+        store.register(Path.of("a.txt"));
+        store.register(Path.of("b.txt"));
+
+        store.setLength(1, 50);
+
+        assertArrayEquals(new int[] {0, 50}, store.lengths()); // a.txt is not set yet
+    }
+
+    @Test
+    public void lengthsAreACopy() {
+        store.register(Path.of("a.txt"));
+        store.setLength(0, 7);
+
+        int[] lengths = store.lengths();
+        lengths[0] = 100;
+
+        assertArrayEquals(new int[] {7}, store.lengths());
+    }
+
+    @Test
+    public void lengthOfUnknownIdThrows() {
+        store.register(Path.of("a.txt"));
+
+        assertThrows(IllegalArgumentException.class, () -> store.setLength(1, 5));
+        assertThrows(IllegalArgumentException.class, () -> store.setLength(-1, 5));
     }
 
     @Test

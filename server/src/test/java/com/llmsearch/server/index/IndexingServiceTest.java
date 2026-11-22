@@ -1,5 +1,6 @@
 package com.llmsearch.server.index;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,6 +52,18 @@ public class IndexingServiceTest {
         assertEquals(Set.of(new Posting(0, 2)), postings(index, "cat"));
         assertEquals(Set.of(new Posting(0, 1), new Posting(1, 1)), postings(index, "dog"));
         assertEquals(Set.of(new Posting(1, 1)), postings(index, "bird"));
+    }
+
+    @Test
+    @Timeout(10)
+    public void savesNumberOfWordsOfEveryDocument() throws IOException, InterruptedException {
+        write("a.txt", "cat dog cat");
+        write("b.txt", "dog, bird!");
+        IndexingService service = new IndexingService(dir);
+
+        service.buildIndex(2);
+
+        assertArrayEquals(new int[] {3, 2}, service.snapshot().store().lengths());
     }
 
     @Test

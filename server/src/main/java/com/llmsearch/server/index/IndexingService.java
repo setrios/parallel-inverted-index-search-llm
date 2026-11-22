@@ -51,11 +51,13 @@ public class IndexingService {
         return files;
     }
 
-    private void indexDocument(InvertedIndex index, int docId, Path file) throws IOException {
+    private void indexDocument(InvertedIndex index, DocumentStore store, int docId, Path file) throws IOException {
         String text = Files.readString(file); // reads whole files into a string
+        List<String> terms = tokenizer.tokenize(text);
+        store.setLength(docId, terms.size()); // BM25 needs the length of every document
 
         HashMap<String, Integer> counts = new HashMap<>();
-        for (String term : tokenizer.tokenize(text)) {
+        for (String term : terms) {
             counts.merge(term, 1, Integer::sum); // +1 if entry exists
         }
 
@@ -88,7 +90,7 @@ public class IndexingService {
                     pool.submit(new Runnable() {
                         public void run() {
                             try {
-                                indexDocument(newIndex, docId, file);
+                                indexDocument(newIndex, newStore, docId, file);
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
