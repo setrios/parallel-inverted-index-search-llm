@@ -56,7 +56,7 @@
       let finished = false;
       let terms = new Set(); // words to make bold in the snippets
       setStage("query_expansion", "active", "running...");
-      const ws = new WebSocket(
+      ws = new WebSocket(
         "ws://" + location.host + "/ws/search",
       );
       ws.onopen = function () {
