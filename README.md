@@ -55,7 +55,7 @@ The index is kept in memory, so build it after every start of the server:
 ```bash
 ./cli/search --index 8        # build the index with 8 threads
 ./cli/search --stats          # number of documents, build time, threads
-./cli/search "car"            # search
+./cli/search "dracula"        # search
 ./cli/search --help
 ```
 
@@ -69,19 +69,19 @@ Web UI: open `http://localhost:8080/` in a browser.
 | Method | Path | Body | Answer |
 |---|---|---|---|
 | GET | `/api/health` | - | `{"status":"ok","ollama":true}` |
-| POST | `/api/index` | `{"threads":8}` | `{"status":"ok","documents_indexed":20000,"time_ms":22748}` |
-| POST | `/api/search` | `{"query":"car","mode":"keyword"}` | `{"results":[{"doc_id":"doc_10521.txt","score":1.0,"snippet":"..."}],"time_ms":812}` |
-| GET | `/api/stats` | - | `{"documents":20000,"index_build_time_ms":22748,"threads_used":8}` |
+| POST | `/api/index` | `{"threads":8}` | `{"status":"ok","documents_indexed":5378,"time_ms":14577}` |
+| POST | `/api/search` | `{"query":"dracula","mode":"keyword"}` | `{"results":[{"doc_id":"10150.txt","score":1.0,"snippet":"..."}],"time_ms":1174}` |
+| GET | `/api/stats` | - | `{"documents":5378,"index_build_time_ms":14577,"threads_used":8}` |
 
 Example:
 
 ```bash
-curl -X POST localhost:8080/api/search -H 'Content-Type: application/json' -d '{"query":"car","mode":"keyword"}'
+curl -X POST localhost:8080/api/search -H 'Content-Type: application/json' -d '{"query":"dracula","mode":"keyword"}'
 ```
 
-WebSocket `ws://localhost:8080/ws/search`: send `{"query":"car"}`, the server sends one message per stage (`query_expansion`, `keyword_search`, `done`).
+WebSocket `ws://localhost:8080/ws/search`: send `{"query":"dracula"}`, the server sends one message per stage (`query_expansion`, `keyword_search`, `done`).
 
-Search returns the 10 best documents, ranked by TF-IDF (Term Frequency – Inverse Document Frequency). Words added by the LLM count half as much as the words from the query. 
+Search returns the 10 best documents, ranked by BM25. It is like TF-IDF (Term Frequency – Inverse Document Frequency), but repeats of a word add less and less, and long books do not win just because they are long. All words added by the LLM together count as half of one word from the query.
 If Ollama is not available, the search still works, just without expansion.
 
 ## 5. Tests
@@ -113,13 +113,17 @@ python scripts/bench_search.py no_ollama    # search throughput without the LLM
 docker compose start ollama
 python scripts/bench_search.py with_ollama  # with the LLM
 python scripts/plot_results.py              # charts
+python scripts/ranking_experiment.py > docs/research/ranking_experiment.txt   # TF-IDF vs BM25
 ```
 
 Results on Intel i5-10600KF with 16GB RAM 3200MHz:
 
-- index build: 105s on 1 thread, 22.7s on 8 threads (4.6 times faster). more than 8 threads is slower
-- search without the LLM: up to about 230 requests per second
-- search with the LLM: about 1.3 requests per second, as Ollama answers one request at a time (and was tested on CPU)
+- index build: 62.5s on 1 thread, 13.2s on 12 threads (4.7 times faster). 16 threads is slower again
+- search without the LLM: up to about 190 requests per second
+- search with the LLM: about 1.2 requests per second, as Ollama answers one request at a time (and was tested on CPU)
+- index in memory: about 0.85 GB
+- ranking on 10 queries with known books: BM25 finds 9 of them in the top 10, TF-IDF only 6.
+  Without the LLM words BM25 finds all 10, so the expansion does not help when you look for a certain book
 
 ## 8. Project structure
 
@@ -127,7 +131,7 @@ Results on Intel i5-10600KF with 16GB RAM 3200MHz:
 server/            Spring Boot server
   concurrent/      ThreadPool
   index/           InvertedIndex, DocumentStore, Tokenizer, IndexingService
-  search/          SearchService, Ranker (TF-IDF), SnippetBuilder
+  search/          SearchService, Ranker (BM25), SnippetBuilder
   ollama/          OllamaClient, QueryExpander
   api/             REST controllers, WebSocket handler
   resources/static/index.html   web UI
