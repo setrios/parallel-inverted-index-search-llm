@@ -19,8 +19,8 @@ import java.util.Set;
 
 public class SearchService {
 
-    private static final double ORIGINAL_WEIGHT = 1.0;
-    private static final double EXPANDED_WEIGHT = 0.5;
+    private static final double ORIGINAL_WEIGHT = 1.0; // every word of the query
+    private static final double EXPANDED_WEIGHT = 0.5; // all words from the LLM together
     private static final int MAX_RESULTS = 10;
 
     private final IndexingService indexing;
@@ -79,7 +79,9 @@ public class SearchService {
         Ranker ranker = new Ranker(store.lengths()); // lengths of the documents of this snapshot
         HashMap<Integer, Double> totals = new HashMap<>();
         addScores(index, ranker, original, ORIGINAL_WEIGHT, totals);
-        addScores(index, ranker, expanded, EXPANDED_WEIGHT, totals);
+        // with a full weight for every LLM word, 5-7 synonyms outweigh the query itself
+        double expandedWeight = expanded.isEmpty() ? 0 : EXPANDED_WEIGHT / expanded.size();
+        addScores(index, ranker, expanded, expandedWeight, totals);
         if (totals.isEmpty()) {
             return List.of();
         }

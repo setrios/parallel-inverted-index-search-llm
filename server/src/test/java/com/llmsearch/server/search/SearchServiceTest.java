@@ -130,6 +130,23 @@ public class SearchServiceTest {
 
     @Test
     @Timeout(10)
+    public void expandedWordsShareTheirWeight() throws IOException, InterruptedException {
+        write("a.txt", "car");
+        write("b.txt", "automobile");
+        write("c.txt", "vehicle");
+        SearchService service = searchOverFiles();
+
+        // two words from the LLM: 0.5 / 2 = 0.25 each
+        List<SearchResult> results = search(service, "car", "automobile", "vehicle");
+
+        assertEquals(3, results.size());
+        assertEquals("a.txt", results.get(0).docId());
+        assertEquals(0.25, results.get(1).score(), DELTA);
+        assertEquals(0.25, results.get(2).score(), DELTA);
+    }
+
+    @Test
+    @Timeout(10)
     public void expandedPhrasesAreSplitIntoWords() throws IOException, InterruptedException {
         write("a.txt", "car");
         write("b.txt", "motor");
