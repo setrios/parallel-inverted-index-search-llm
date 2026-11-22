@@ -12,5 +12,6 @@ Format: `type: short description`
 | test     | tests and benchmarks                  |
 | chore    | setup, dependencies                   |
 | refactor | code change without behavior change   |
+| build    | build settings: pom.xml, Dockerfile   |
 
 https://www.conventionalcommits.org/
