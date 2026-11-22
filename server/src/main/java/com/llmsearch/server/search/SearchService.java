@@ -26,7 +26,6 @@ public class SearchService {
     private final IndexingService indexing;
     private final QueryExpander expander;
     private final Tokenizer tokenizer = new Tokenizer();
-    private final Ranker ranker = new Ranker();
     private final SnippetBuilder snippetBuilder = new SnippetBuilder();
 
     public SearchService(IndexingService indexing, QueryExpander expander) {
@@ -48,17 +47,13 @@ public class SearchService {
 
     private void addScores(
         InvertedIndex index,
+        Ranker ranker,
         Set<String> terms,
         double weight,
-        int totalDocs,
         HashMap<Integer, Double> totals
     ) {
         for (String term : terms) {
-            Map<Integer, Double> scores = ranker.score(
-                index.get(term),
-                weight,
-                totalDocs
-            );
+            Map<Integer, Double> scores = ranker.score(index.get(term), weight);
             for (Map.Entry<Integer, Double> e : scores.entrySet()) {
                 totals.merge(e.getKey(), e.getValue(), Double::sum);
             }
@@ -81,9 +76,10 @@ public class SearchService {
         expanded.removeAll(original);
 
         // total score of every found document
+        Ranker ranker = new Ranker(store.lengths()); // lengths of the documents of this snapshot
         HashMap<Integer, Double> totals = new HashMap<>();
-        addScores(index, original, ORIGINAL_WEIGHT, totalDocs, totals);
-        addScores(index, expanded, EXPANDED_WEIGHT, totalDocs, totals);
+        addScores(index, ranker, original, ORIGINAL_WEIGHT, totals);
+        addScores(index, ranker, expanded, EXPANDED_WEIGHT, totals);
         if (totals.isEmpty()) {
             return List.of();
         }

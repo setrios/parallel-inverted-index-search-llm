@@ -45,18 +45,32 @@ public class SearchServiceTest {
     @Test
     @Timeout(10)
     public void bestDocumentFirstWithScoreOne() throws IOException, InterruptedException {
-        write("a.txt", "cat cat dog");
+        write("a.txt", "cat cat");
         write("b.txt", "cat dog");
-        write("c.txt", "bird");
+        write("c.txt", "dog bird");
         SearchService service = searchOverFiles();
 
         List<SearchResult> results = search(service, "cat");
 
+        // all files have 2 words, so BM25 gives tf * 2.2 / (tf + 1.2): 1.375 for a.txt and 1.0 for b.txt
         assertEquals(2, results.size());
         assertEquals("a.txt", results.get(0).docId());
         assertEquals(1.0, results.get(0).score(), DELTA);
         assertEquals("b.txt", results.get(1).docId());
-        assertEquals(0.5, results.get(1).score(), DELTA);
+        assertEquals(1.0 / 1.375, results.get(1).score(), DELTA);
+    }
+
+    @Test
+    @Timeout(10)
+    public void shortDocumentBeatsLongOneWithSameCount() throws IOException, InterruptedException {
+        write("a.txt", "cat " + "dog ".repeat(20));
+        write("b.txt", "cat bird");
+        SearchService service = searchOverFiles();
+
+        List<SearchResult> results = search(service, "cat");
+
+        assertEquals("b.txt", results.get(0).docId());
+        assertEquals("a.txt", results.get(1).docId());
     }
 
     @Test
