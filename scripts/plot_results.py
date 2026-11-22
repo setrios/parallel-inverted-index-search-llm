@@ -29,7 +29,7 @@ plt.plot(threads, seconds, "o-")
 plt.xticks(threads)
 plt.xlabel("threads")
 plt.ylabel("build time, s")
-plt.title("Index build time (20 000 documents)")
+plt.title("Index build time (5378 documents)")
 plt.grid(alpha=0.3)
 plt.savefig(DIR + "build_time.png", dpi=150, bbox_inches="tight")
 
