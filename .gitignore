@@ -1,5 +1,4 @@
 .vscode/
-data/
 target/
 tools/.venv/
 *.log
