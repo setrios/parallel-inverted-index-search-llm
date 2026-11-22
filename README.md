@@ -1,6 +1,6 @@
 # Parallel inverted index search with LLM query expansion
 
-A search server for a large set of English text files. The inverted index is built in
+A search server for a large set of English books. The inverted index is built in
 parallel by our own thread pool and stored in our own thread-safe data structure.
 Before searching, the query is expanded with synonyms by a local LLM (Ollama).
 Results are available over a REST API and a WebSocket, with a command-line client
@@ -10,24 +10,23 @@ and a small web page.
 
 - Docker with Docker Compose
 - about 10 GB of free RAM (server up to 6 GB, Ollama about 2.5 GB)
-- Python 3 (for the CLI client and the dataset generator)
+- Python 3 (for the CLI client and the benchmark scripts)
 - JDK 25 (for tests and run without Docker)
 
 ## 1. Dataset
 
-The server indexes all `*.txt` files in the `data/` folder. The folder is not in git.
+The `data/` folder is in the repository, so nothing has to be downloaded. It has 5378 English
+books (2.1 GB, UTF-8) from [PG-19](https://github.com/google-deepmind/pg19), a DeepMind dataset
+of Project Gutenberg books published before 1919. A file is named by its book id, for example
+`11.txt` is "Alice's Adventures in Wonderland". Titles of all books are in `metadata.csv` of PG-19.
 
-Generate the dataset (20 000 documents, about 2 GB):
+The server indexes all `*.txt` files in `data/`, so you can also put your own English `.txt` files there.
+
+Numbers about the dataset (words per book, index size):
 
 ```bash
-python3 -m venv tools/.venv
-source tools/.venv/bin/activate
-pip install -r tools/requirements.txt
-python tools/generate_dataset.py
+python3 scripts/dataset_stats.py
 ```
-
-Options: `--docs` (number of files), `--sentences` (size of a file), `--seed`.
-You can also put your own English `.txt` files into `data/` instead.
 
 ## 2. Start
 
@@ -105,7 +104,9 @@ cd server
 Scripts are in `scripts/`, results (CSV, charts, test machine) in `docs/research/`.
 
 ```bash
-source tools/.venv/bin/activate
+python3 -m venv scripts/.venv
+source scripts/.venv/bin/activate
+pip install -r scripts/requirements.txt     # matplotlib for the charts
 python scripts/bench_index.py               # build time for 1..16 threads
 docker compose stop ollama
 python scripts/bench_search.py no_ollama    # search throughput without the LLM
@@ -131,8 +132,8 @@ server/            Spring Boot server
   api/             REST controllers, WebSocket handler
   resources/static/index.html   web UI
 cli/search         command-line client
-tools/             dataset generator
-scripts/           benchmark and chart scripts
+data/              dataset (5378 books from PG-19)
+scripts/           dataset statistics, benchmark and chart scripts
 docs/uml/          UML diagrams
 docs/research/     benchmark results and charts
 docker-compose.yml
