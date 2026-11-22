@@ -16,7 +16,8 @@ import com.llmsearch.server.concurrent.ThreadPool;
 
 public class IndexingService {
     private static final int SEGMENTS = 16;
-    
+    private static final int MAX_THREADS = 64; // more threads than this only waste memory, and a huge number crashes the server
+
     private final Path dataDir;
     private final ReentrantLock buildLock = new ReentrantLock();
     private final Tokenizer tokenizer = new Tokenizer();
@@ -67,7 +68,7 @@ public class IndexingService {
     }
 
     public IndexStats buildIndex(int threads) throws IOException, InterruptedException {
-        if (threads < 1) {
+        if (threads < 1 || threads > MAX_THREADS) {
             throw new IllegalArgumentException("number of threads must be at least 1");
         }
 

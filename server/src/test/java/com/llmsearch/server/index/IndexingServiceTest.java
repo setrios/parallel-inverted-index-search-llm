@@ -147,6 +147,17 @@ public class IndexingServiceTest {
 
     @Test
     @Timeout(10)
+    public void rejectsTooManyThreads() throws IOException, InterruptedException {
+        write("a.txt", "cat");
+        IndexingService service = new IndexingService(dir);
+
+        assertThrows(IllegalArgumentException.class, () -> service.buildIndex(65));
+        assertThrows(IllegalArgumentException.class, () -> service.buildIndex(1000000));
+        assertEquals(1, service.buildIndex(64).documents()); // 64 is still allowed
+    }
+
+    @Test
+    @Timeout(10)
     public void unreadableDocumentFailsTheBuild() throws IOException, InterruptedException {
         write("a.txt", "cat");
         IndexingService service = new IndexingService(dir);
