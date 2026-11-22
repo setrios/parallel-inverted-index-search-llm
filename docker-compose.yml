@@ -31,7 +31,7 @@ services:
     environment:
       OLLAMA_URL: http://ollama:11434
       DATA_DIR: /data
-      JAVA_TOOL_OPTIONS: -Xmx6g # the index takes about 2 GB, rebuild needs room for two
+      JAVA_TOOL_OPTIONS: -Xmx6g # the index takes about 0.9 GB, rebuild needs room for two
     volumes:
       - ./data:/data:ro
     depends_on:
