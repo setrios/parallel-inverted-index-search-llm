@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Counts numbers about the dataset in data/ for the report (takes a few minutes)"""
+"""Counts numbers about the dataset in data/ for the report"""
 
 import re
 import statistics
