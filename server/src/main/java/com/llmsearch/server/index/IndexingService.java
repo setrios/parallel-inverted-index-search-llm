@@ -69,7 +69,7 @@ public class IndexingService {
 
     public IndexStats buildIndex(int threads) throws IOException, InterruptedException {
         if (threads < 1 || threads > MAX_THREADS) {
-            throw new IllegalArgumentException("number of threads must be at least 1");
+            throw new IllegalArgumentException("number of threads must be from 1 to " + MAX_THREADS);
         }
 
         // each HTTP request runs in its own web server thread, so two requests
